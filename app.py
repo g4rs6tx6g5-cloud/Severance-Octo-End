@@ -33,6 +33,48 @@ def validate_positive_number(value):
     """Validate that input is a positive number"""
     return value and value > 0
 
+def calculate_pressure_gauge(long_oi, short_oi):
+    """Calculate the Pressure Gauge: (Long OI - Short OI) / Total OI"""
+    total_oi = long_oi + short_oi
+    if total_oi == 0:
+        return 0
+    return (long_oi - short_oi) / total_oi
+
+def calculate_trend_status(current_price, ma50):
+    """Determine trend status based on MA50"""
+    if current_price > ma50:
+        return "BULLISH (AETOS ACTIVE)", "🟢"
+    else:
+        return "BEARISH (KHRUSOS ACTIVE)", "🔴"
+
+def calculate_fibonacci_levels(high, low):
+    """Calculate Fibonacci retracement levels"""
+    diff = high - low
+    levels = {
+        '23.6%': high - (diff * 0.236),
+        '38.2%': high - (diff * 0.382),
+        '50.0%': high - (diff * 0.500),
+        '61.8%': high - (diff * 0.618),
+        '78.6%': high - (diff * 0.786),
+        'support': low,
+        'resistance': high
+    }
+    return levels
+
+def calculate_timeframe_multiplier(timeframe):
+    """Calculate multiplier for different timeframes"""
+    multipliers = {
+        '1m': 1,
+        '5m': 5,
+        '15m': 15,
+        '30m': 30,
+        '1h': 60,
+        '4h': 240,
+        '1d': 1440,
+        '1w': 10080
+    }
+    return multipliers.get(timeframe, 60)
+
 def process_arbitrage_calculation(odds_list, bankroll):
     """Process the complete arbitrage calculation"""
     try:
@@ -83,20 +125,6 @@ def process_arbitrage_calculation(odds_list, bankroll):
             'error': str(e)
         }
 
-def calculate_pressure_gauge(long_oi, short_oi):
-    """Calculate the Pressure Gauge: (Long OI - Short OI) / Total OI"""
-    total_oi = long_oi + short_oi
-    if total_oi == 0:
-        return 0
-    return (long_oi - short_oi) / total_oi
-
-def calculate_trend_status(current_price, ma50):
-    """Determine trend status based on MA50"""
-    if current_price > ma50:
-        return "BULLISH (AETOS ACTIVE)", "🟢"
-    else:
-        return "BEARISH (KHRUSOS ACTIVE)", "🔴"
-
 def main():
     # Configure Streamlit page
     st.set_page_config(
@@ -123,6 +151,11 @@ def main():
         border: 1px solid #374151;
     }
     .stNumberInput > div > div > input {
+        background-color: #202938;
+        color: #ffffff;
+        border: 1px solid #374151;
+    }
+    .stSelectbox > div > div {
         background-color: #202938;
         color: #ffffff;
         border: 1px solid #374151;
@@ -179,6 +212,13 @@ def main():
         margin: 10px 0;
         border-left: 4px solid #fbbf24;
     }
+    .fib-level {
+        background-color: #1f2937;
+        padding: 8px;
+        border-radius: 5px;
+        margin: 2px 0;
+        border-left: 2px solid #8b5cf6;
+    }
     h1, h2, h3, h4, h5, h6 {
         color: #ffffff;
     }
@@ -190,7 +230,7 @@ def main():
     st.markdown("*Mathematical precision for BTC/USDT trading mastery*")
     
     # Navigation
-    tab1, tab2, tab3 = st.tabs(["Arbitrage Calculator", "Pressure Gauge", "Market Analysis"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Arbitrage Calculator", "Pressure Gauge", "Market Analysis", "Fibonacci Engine"])
     
     with tab1:
         # Sidebar for configuration
@@ -411,7 +451,7 @@ def main():
     
     with tab3:
         st.header("📈 Market Analysis Dashboard")
-        st.markdown("*Tri-Framework integration*")
+        st.markdown("*Tri-Framework integration with Fibonacci alignment*")
         
         col1, col2 = st.columns(2)
         
@@ -435,26 +475,29 @@ def main():
             )
         
         with col2:
-            support_level = st.number_input(
-                "Critical Support Level:",
+            recent_high = st.number_input(
+                "Recent Swing High:",
                 min_value=0.0,
-                value=109400.0,
+                value=110000.0,
                 step=100.0,
                 format="%.2f",
-                key="support"
+                key="recent_high"
             )
             
-            resistance_level = st.number_input(
-                "Critical Resistance Level:",
+            recent_low = st.number_input(
+                "Recent Swing Low:",
                 min_value=0.0,
-                value=109715.0,
+                value=109000.0,
                 step=100.0,
                 format="%.2f",
-                key="resistance"
+                key="recent_low"
             )
         
         if st.button("🎯 Analyze Market Structure", type="secondary"):
             with st.spinner("Analyzing market structure..."):
+                # Calculate Fibonacci levels
+                fib_levels = calculate_fibonacci_levels(recent_high, recent_low)
+                
                 # Trend analysis
                 trend_status, trend_emoji = calculate_trend_status(current_price, ma50)
                 
@@ -463,37 +506,146 @@ def main():
                 # Display current market status
                 st.metric("Current Price", f"${current_price:,.2f}")
                 st.metric("MA50", f"${ma50:,.2f}")
-                st.metric("Support Level", f"${support_level:,.2f}")
-                st.metric("Resistance Level", f"${resistance_level:,.2f}")
+                st.metric("Swing High", f"${recent_high:,.2f}")
+                st.metric("Swing Low", f"${recent_low:,.2f}")
                 
                 # Trend analysis
                 st.markdown(f"### 🎯 Trend Status: {trend_emoji} {trend_status}")
                 
-                # Price position relative to levels
+                # Fibonacci levels
+                st.markdown("### 📐 Fibonacci Levels:")
+                for level_name, level_value in fib_levels.items():
+                    if level_name not in ['support', 'resistance']:
+                        color = "🟢" if abs(current_price - level_value) < 1000 else "⚪️"
+                        st.markdown(f"<div class='fib-level'>{color} **{level_name}: ${level_value:,.2f}**</div>", unsafe_allow_html=True)
+                
+                # Price position relative to Fibonacci levels
                 st.markdown("### 📍 Price Positioning:")
-                if current_price > resistance_level:
-                    st.success(f"✅ PRICE ABOVE RESISTANCE: {current_price - resistance_level:.2f} above")
-                elif current_price < support_level:
-                    st.error(f"❌ PRICE BELOW SUPPORT: {support_level - current_price:.2f} below")
-                else:
-                    st.info(f"⚠️ PRICE IN RANGE: {current_price - support_level:.2f} from support, {resistance_level - current_price:.2f} from resistance")
+                closest_fib = min(fib_levels.values(), key=lambda x: abs(x - current_price))
+                fib_distance = abs(current_price - closest_fib)
+                st.info(f"Closest Fibonacci level: ${closest_fib:,.2f} (Distance: ${fib_distance:,.2f})")
                 
                 # Framework integration
                 st.markdown("### 🔮 Tri-Framework Status:")
                 if current_price > ma50:
                     st.success("✅ AETOS PROTOCOL ACTIVE - Trading with primary trend")
-                    st.info("🎯 Strategy: Look for entries above resistance levels")
+                    st.info("🎯 Strategy: Look for entries above key Fibonacci levels")
                 else:
                     st.warning("⚠️ KHRUSOS PROTOCOL ACTIVE - Capital preservation mode")
-                    st.info("🎯 Strategy: Look for entries below support levels")
+                    st.info("🎯 Strategy: Look for entries below key Fibonacci levels")
                 
                 # Compression analysis
-                compression_distance = resistance_level - support_level
+                compression_distance = recent_high - recent_low
                 if compression_distance < 1000:  # Less than $1000 range
-                    st.warning(f"⚠️ COMPRESSION DETECTED: Only {compression_distance:.2f} points between support and resistance")
+                    st.warning(f"⚠️ COMPRESSION DETECTED: Only {compression_distance:.2f} points between swing high and low")
                     st.info("🎯 ALPHA COMPRESSION SPRING - High probability setup when compression breaks")
                 else:
                     st.info(f"📊 Current Range: {compression_distance:.2f} points")
+    
+    with tab4:
+        st.header("🧮 Fibonacci Engine - Multi-Timeframe Analysis")
+        st.markdown("*Magnifying glass for small timeframes, binoculars for long-term trends*")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            high_price = st.number_input(
+                "Swing High Price:",
+                min_value=0.0,
+                value=110000.0,
+                step=100.0,
+                format="%.2f",
+                key="high_price"
+            )
+            
+            low_price = st.number_input(
+                "Swing Low Price:",
+                min_value=0.0,
+                value=109000.0,
+                step=100.0,
+                format="%.2f",
+                key="low_price"
+            )
+        
+        with col2:
+            current_price_fib = st.number_input(
+                "Current Price:",
+                min_value=0.0,
+                value=109550.0,
+                step=100.0,
+                format="%.2f",
+                key="current_price_fib"
+            )
+            
+            timeframe = st.selectbox(
+                "Analysis Timeframe:",
+                options=['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'],
+                index=4,  # Default to 1h
+                key="timeframe"
+            )
+        
+        if st.button("🧮 Calculate Fibonacci Analysis", type="secondary"):
+            with st.spinner("Calculating Fibonacci levels..."):
+                # Calculate Fibonacci levels
+                fib_levels = calculate_fibonacci_levels(high_price, low_price)
+                
+                st.markdown("### 📐 Fibonacci Retracement Levels:")
+                
+                # Create columns for Fibonacci levels
+                cols = st.columns(5)
+                fib_items = list(fib_levels.items())
+                
+                for i, (level_name, level_value) in enumerate(fib_levels.items()):
+                    if level_name not in ['support', 'resistance']:
+                        with cols[i % 5]:
+                            st.metric(label=level_name, value=f"${level_value:,.2f}")
+                
+                st.markdown("### 📍 Current Price Analysis:")
+                
+                # Determine which Fibonacci level current price is closest to
+                distances = {name: abs(current_price_fib - value) for name, value in fib_levels.items()}
+                closest_level = min(distances, key=distances.get)
+                closest_distance = distances[closest_level]
+                
+                st.metric(
+                    label=f"Closest Level: {closest_level}",
+                    value=f"${fib_levels[closest_level]:,.2f}",
+                    delta=f"${closest_distance:.2f} away"
+                )
+                
+                # Fibonacci level interpretation
+                st.markdown("### 🎯 Fibonacci Interpretation:")
+                
+                # Check if price is near specific levels
+                for level_name, level_value in fib_levels.items():
+                    if level_name not in ['support', 'resistance']:
+                        distance = abs(current_price_fib - level_value)
+                        if distance < 500:  # If within $500 of level
+                            st.success(f"🎯 PRICE NEAR {level_name} LEVEL (${level_value:,.2f}) - Potential Support/Resistance")
+                        elif distance < 1000:  # If within $1000 of level
+                            st.info(f"ℹ️ PRICE APPROACHING {level_name} LEVEL (${level_value:,.2f})")
+                
+                # Timeframe analysis
+                st.markdown(f"### 🕐 Timeframe Analysis: {timeframe}")
+                multiplier = calculate_timeframe_multiplier(timeframe)
+                st.info(f"Timeframe multiplier: {multiplier} minutes")
+                
+                if multiplier <= 60:  # Short timeframes (1m-1h)
+                    st.warning("🔍 MAGNIFYING GLASS MODE: Short-term analysis, higher volatility expected")
+                elif multiplier <= 1440:  # Medium timeframes (4h-1d)
+                    st.info("⚖️ BALANCED VIEW: Medium-term analysis, balanced risk/reward")
+                else:  # Long timeframes (1d-1w)
+                    st.success(" binoculars MODE: Long-term analysis, lower volatility expected")
+                
+                # Multi-timeframe alignment
+                st.markdown("### 🎯 Multi-Timeframe Alignment:")
+                if current_price_fib > fib_levels['50.0%']:
+                    st.success("📈 PRICE ABOVE 50% LEVEL - Bullish bias on multiple timeframes")
+                else:
+                    st.error("📉 PRICE BELOW 50% LEVEL - Bearish bias on multiple timeframes")
+                
+                if abs(current_price_fib - fib_levels['38.2%']) < 500 or abs(current_price_fib - fib_levels['61.8%']) < 500:
+                    st.warning("⚠️ PRICE NEAR KEY FIBONACCI LEVEL - High probability reversal zone")
     
     # Information section
     with st.expander("📚 Framework Information"):
@@ -514,6 +666,11 @@ def main():
         **ALPHA COMPRESSION SPRING:**
         When price compresses in tight range with extreme positioning, 
         a break often triggers a squeeze in the opposite direction.
+        
+        **FIBONACCI LEVELS:**
+        - 23.6%, 38.2%, 50%, 61.8%, 78.6% - Key support/resistance levels
+        - Price often reverses at these levels
+        - Multi-timeframe alignment increases probability
         """)
     
     # Footer
