@@ -737,7 +737,15 @@ def main():
             st.subheader("DMI (Directional Movement Index)")
             st.markdown("*Trend strength validation*")
             
-            # Simulated price data for DMI calculation
+            # Timeframe selector for DMI
+            dmi_timeframe = st.selectbox(
+                "DMI Timeframe:",
+                options=['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'],
+                index=4,  # Default to 1h
+                key="dmi_timeframe"
+            )
+            
+            # Simulated price data for DMI calculation (will be replaced by API data)
             high_prices = st.text_input("High Prices (comma separated, last 15 values):", 
                                        "110000,110100,110200,110150,110250,110300,110200,110100,110150,110200,110100,110050,110000,109950,109900")
             low_prices = st.text_input("Low Prices (comma separated, last 15 values):", 
@@ -749,7 +757,15 @@ def main():
             st.subheader("RSI (Relative Strength Index)")
             st.markdown("*Momentum analysis*")
             
-            # Simulated price data for RSI calculation
+            # Timeframe selector for RSI
+            rsi_timeframe = st.selectbox(
+                "RSI Timeframe:",
+                options=['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'],
+                index=4,  # Default to 1h
+                key="rsi_timeframe"
+            )
+            
+            # Simulated price data for RSI calculation (will be replaced by API data)
             prices = st.text_input("Price Data (comma separated, last 15 values):", 
                                   "109550,109600,109650,109700,109750,109800,109850,109900,109950,110000,110050,110100,110150,110200,110250")
         
@@ -772,6 +788,9 @@ def main():
                 rsi = calculate_rsi(price_list)
                 
                 st.markdown("### 📊 Technical Analysis Results:")
+                
+                # Display selected timeframes
+                st.info(f"DMI Timeframe: {dmi_timeframe} | RSI Timeframe: {rsi_timeframe}")
                 
                 # DMI Analysis
                 st.markdown("#### 📈 DMI Analysis:")
