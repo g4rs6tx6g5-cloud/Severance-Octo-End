@@ -75,6 +75,65 @@ def calculate_timeframe_multiplier(timeframe):
     }
     return multipliers.get(timeframe, 60)
 
+def calculate_rsi(prices, period=14):
+    """Calculate RSI (Simplified version for demonstration)"""
+    if len(prices) < period + 1:
+        return 50  # Default to neutral if not enough data
+    
+    # Calculate simple RSI based on price changes
+    gains = 0
+    losses = 0
+    
+    for i in range(1, period + 1):
+        change = prices[-i] - prices[-i-1]
+        if change > 0:
+            gains += change
+        else:
+            losses += abs(change)
+    
+    if losses == 0:
+        return 100
+    if gains == 0:
+        return 0
+    
+    rs = gains / losses
+    rsi = 100 - (100 / (1 + rs))
+    return min(max(rsi, 0), 100)  # Clamp between 0 and 100
+
+def calculate_dmi(high_prices, low_prices, close_prices, period=14):
+    """Calculate DMI components (Simplified version for demonstration)"""
+    if len(high_prices) < period + 1:
+        return 25, 25  # Default to neutral if not enough data
+    
+    # Calculate simplified DMI components
+    tr_sum = 0
+    hd_sum = 0
+    ld_sum = 0
+    
+    for i in range(1, period + 1):
+        tr = max(
+            high_prices[-i] - low_prices[-i],
+            abs(high_prices[-i] - close_prices[-i-1]),
+            abs(low_prices[-i] - close_prices[-i-1])
+        )
+        tr_sum += tr
+        
+        hd = high_prices[-i] - high_prices[-i-1]
+        ld = low_prices[-i-1] - low_prices[-i]
+        
+        if hd > 0 and hd > ld:
+            hd_sum += hd
+        if ld > 0 and ld > hd:
+            ld_sum += ld
+    
+    if tr_sum == 0:
+        return 0, 0
+    
+    pdi = (hd_sum / tr_sum) * 100 if tr_sum != 0 else 0
+    mdi = (ld_sum / tr_sum) * 100 if tr_sum != 0 else 0
+    
+    return min(pdi, 100), min(mdi, 100)
+
 def process_arbitrage_calculation(odds_list, bankroll):
     """Process the complete arbitrage calculation"""
     try:
@@ -219,6 +278,27 @@ def main():
         margin: 2px 0;
         border-left: 2px solid #8b5cf6;
     }
+    .indicator-bullish {
+        background-color: #16a34a;
+        padding: 8px;
+        border-radius: 5px;
+        margin: 2px 0;
+        border-left: 2px solid #22c55e;
+    }
+    .indicator-bearish {
+        background-color: #dc2626;
+        padding: 8px;
+        border-radius: 5px;
+        margin: 2px 0;
+        border-left: 2px solid #ef4444;
+    }
+    .indicator-neutral {
+        background-color: #f59e0b;
+        padding: 8px;
+        border-radius: 5px;
+        margin: 2px 0;
+        border-left: 2px solid #fbbf24;
+    }
     h1, h2, h3, h4, h5, h6 {
         color: #ffffff;
     }
@@ -230,7 +310,7 @@ def main():
     st.markdown("*Mathematical precision for BTC/USDT trading mastery*")
     
     # Navigation
-    tab1, tab2, tab3, tab4 = st.tabs(["Arbitrage Calculator", "Pressure Gauge", "Market Analysis", "Fibonacci Engine"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Arbitrage Calculator", "Pressure Gauge", "Market Analysis", "Fibonacci Engine", "Technical Indicators"])
     
     with tab1:
         # Sidebar for configuration
@@ -647,6 +727,119 @@ def main():
                 if abs(current_price_fib - fib_levels['38.2%']) < 500 or abs(current_price_fib - fib_levels['61.8%']) < 500:
                     st.warning("⚠️ PRICE NEAR KEY FIBONACCI LEVEL - High probability reversal zone")
     
+    with tab5:
+        st.header("📊 Technical Indicators - DMI & RSI Integration")
+        st.markdown("*Trend strength and momentum analysis for 99.99% certainty*")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("DMI (Directional Movement Index)")
+            st.markdown("*Trend strength validation*")
+            
+            # Simulated price data for DMI calculation
+            high_prices = st.text_input("High Prices (comma separated, last 15 values):", 
+                                       "110000,110100,110200,110150,110250,110300,110200,110100,110150,110200,110100,110050,110000,109950,109900")
+            low_prices = st.text_input("Low Prices (comma separated, last 15 values):", 
+                                      "109500,109600,109700,109650,109750,109800,109700,109600,109650,109700,109600,109550,109500,109450,109400")
+            close_prices = st.text_input("Close Prices (comma separated, last 15 values):", 
+                                        "109800,109900,110000,109950,110050,110100,110000,109900,109950,110000,109900,109850,109800,109750,109700")
+        
+        with col2:
+            st.subheader("RSI (Relative Strength Index)")
+            st.markdown("*Momentum analysis*")
+            
+            # Simulated price data for RSI calculation
+            prices = st.text_input("Price Data (comma separated, last 15 values):", 
+                                  "109550,109600,109650,109700,109750,109800,109850,109900,109950,110000,110050,110100,110150,110200,110250")
+        
+        if st.button("📊 Calculate Technical Indicators", type="secondary"):
+            with st.spinner("Calculating DMI and RSI..."):
+                # Parse the input data
+                try:
+                    high_list = [float(x.strip()) for x in high_prices.split(',')]
+                    low_list = [float(x.strip()) for x in low_prices.split(',')]
+                    close_list = [float(x.strip()) for x in close_prices.split(',')]
+                    price_list = [float(x.strip()) for x in prices.split(',')]
+                except:
+                    st.error("Please enter valid comma-separated numbers")
+                    return
+                
+                # Calculate DMI
+                pdi, mdi = calculate_dmi(high_list, low_list, close_list)
+                
+                # Calculate RSI
+                rsi = calculate_rsi(price_list)
+                
+                st.markdown("### 📊 Technical Analysis Results:")
+                
+                # DMI Analysis
+                st.markdown("#### 📈 DMI Analysis:")
+                col_dmi1, col_dmi2 = st.columns(2)
+                
+                with col_dmi1:
+                    st.metric("PDI (Positive Directional Indicator)", f"{pdi:.2f}")
+                
+                with col_dmi2:
+                    st.metric("MDI (Negative Directional Indicator)", f"{mdi:.2f}")
+                
+                # DMI Interpretation
+                if pdi > mdi + 10:
+                    st.markdown(
+                        f'<div class="indicator-bullish"><h4>🟢 BULLISH TREND STRENGTH</h4><p>PDI ({pdi:.2f}) significantly stronger than MDI ({mdi:.2f})</p></div>',
+                        unsafe_allow_html=True
+                    )
+                elif mdi > pdi + 10:
+                    st.markdown(
+                        f'<div class="indicator-bearish"><h4>🔴 BEARISH TREND STRENGTH</h4><p>MDI ({mdi:.2f}) significantly stronger than PDI ({pdi:.2f})</p></div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div class="indicator-neutral"><h4>🟡 NEUTRAL TREND STRENGTH</h4><p>PDI ({pdi:.2f}) and MDI ({mdi:.2f}) are balanced</p></div>',
+                        unsafe_allow_html=True
+                    )
+                
+                # RSI Analysis
+                st.markdown("#### 📊 RSI Analysis:")
+                st.metric("RSI (14-period)", f"{rsi:.2f}")
+                
+                # RSI Interpretation
+                if rsi > 70:
+                    st.markdown(
+                        f'<div class="indicator-bearish"><h4>🔴 OVERBOUGHT ({rsi:.2f})</h4><p>Potential for reversal down</p></div>',
+                        unsafe_allow_html=True
+                    )
+                elif rsi < 30:
+                    st.markdown(
+                        f'<div class="indicator-bullish"><h4>🟢 OVERSOLD ({rsi:.2f})</h4><p>Potential for reversal up</p></div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div class="indicator-neutral"><h4>🟡 NEUTRAL ({rsi:.2f})</h4><p>Market in balanced state</p></div>',
+                        unsafe_allow_html=True
+                    )
+                
+                # Combined Analysis
+                st.markdown("### 🔮 Combined Technical Analysis:")
+                
+                if pdi > mdi + 10 and rsi < 70 and rsi > 30:
+                    st.success("✅ BULLISH CONFLUENCE: Strong trend + Neutral momentum = AETOS PROTOCOL OPTIMAL")
+                elif mdi > pdi + 10 and rsi < 70 and rsi > 30:
+                    st.warning("⚠️ BEARISH CONFLUENCE: Strong trend + Neutral momentum = KHRUSOS PROTOCOL OPTIMAL")
+                elif pdi > mdi + 10 and rsi < 30:
+                    st.info("ℹ️ BULLISH DIVERGENCE: Strong trend + Oversold = Potential reversal")
+                elif mdi > pdi + 10 and rsi > 70:
+                    st.info("ℹ️ BEARISH DIVERGENCE: Strong trend + Overbought = Potential reversal")
+                else:
+                    st.info("📊 Mixed signals - Wait for clearer confluence")
+                
+                # Framework Integration
+                st.markdown("### 🎯 Framework Integration:")
+                st.info("DMI + RSI analysis now feeds into your 99.99% certainty stack")
+                st.info("Perfect foundation for AI agent data quantification")
+    
     # Information section
     with st.expander("📚 Framework Information"):
         st.markdown("""
@@ -671,6 +864,17 @@ def main():
         - 23.6%, 38.2%, 50%, 61.8%, 78.6% - Key support/resistance levels
         - Price often reverses at these levels
         - Multi-timeframe alignment increases probability
+        
+        **DMI (Directional Movement Index):**
+        - PDI: Positive Directional Indicator (uptrend strength)
+        - MDI: Negative Directional Indicator (downtrend strength)
+        - Higher PDI than MDI = Bullish trend strength
+        - Higher MDI than PDI = Bearish trend strength
+        
+        **RSI (Relative Strength Index):**
+        - Overbought: RSI > 70 (potential reversal down)
+        - Oversold: RSI < 30 (potential reversal up)
+        - Neutral: 30-70 (balanced market)
         """)
     
     # Footer
